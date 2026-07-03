@@ -25,7 +25,7 @@ export const createPickupManager = (
         return raster;
     };
 
-    const overlapsObstacle = (shape: paper.Path) =>
+    const overlapsObstacle = (shape: paper.Item) =>
         getObstacleBounds().some(b => b.intersects(shape.bounds));
 
     const update = () => {

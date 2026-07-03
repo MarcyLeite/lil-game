@@ -40,7 +40,8 @@ export const createGame = (scope: paper.PaperScope) => {
     const pickupManager = createPickupManager(scope, groundY, player, () => hud.addPoint(), obstacleManager.getObstacleBounds, getSpeed)
 
     const prevOnFrame = scope.view.onFrame;
-    scope.view.onFrame = (event: paper.IFrameEvent) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    scope.view.onFrame = (event: any) => {
         if (prevOnFrame) prevOnFrame(event);
         frameCount++;
         obstacleManager.update();
