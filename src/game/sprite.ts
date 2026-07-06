@@ -1,5 +1,6 @@
 import walkSprite from '../assets/player-walk.png'
 import duckSprite from '../assets/player-duck.png'
+import { createSheet } from './raster'
 
 const ANIM_SPEED = 8
 
@@ -12,16 +13,10 @@ export const createSprite = (scope: paper.PaperScope, initialBounds: paper.Recta
         fillColor: 'white',
     });
 
-    const loadSheet = (src: string, frameCount: number) => {
-        const raster = new scope.Raster(src);
-        raster.onLoad = () => {
-            raster.scale(
-                (displayW * frameCount) / raster.width,
-                displayH / raster.height,
-            );
-        };
-        return { raster, frameCount };
-    };
+    const loadSheet = (src: string, frameCount: number) => ({
+        raster: createSheet(scope, src, displayW, displayH, frameCount),
+        frameCount,
+    });
 
     const walk = loadSheet(walkSprite, 4);
     const duck = loadSheet(duckSprite, 2);

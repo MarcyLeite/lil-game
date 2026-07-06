@@ -1,6 +1,8 @@
 import { createObstacle } from "./obstacle"
 import cactusSprite from '../assets/cacto.png'
 import beeSprite from '../assets/bee.png'
+import { createRaster, createSheet } from './raster'
+import type { Player } from './player'
 
 const SPAWN_INTERVAL = 120
 const OBSTACLE_WIDTH = 20
@@ -9,20 +11,18 @@ const BEE_SIZE = 32
 const BEE_FRAME_COUNT = 4
 const BEE_ANIM_SPEED = 6
 
-export const createObstacleManager = (scope: paper.PaperScope, groundY: number, player: paper.Path, onCollision: () => void, getSpeed: () => number) => {
+export const createObstacleManager = (scope: paper.PaperScope, groundY: number, player: Player, getSpeed: () => number) => {
     const obstacles: ReturnType<typeof createObstacle>[] = [];
     let frameCount = 0;
 
     const spawnGround = () => {
-        const raster = new scope.Raster(cactusSprite);
-        raster.position = new scope.Point(
-            scope.view.bounds.right + OBSTACLE_WIDTH / 2,
-            groundY - OBSTACLE_HEIGHT / 2,
+        return createRaster(
+            scope,
+            cactusSprite,
+            new scope.Point(scope.view.bounds.right + OBSTACLE_WIDTH / 2, groundY - OBSTACLE_HEIGHT / 2),
+            OBSTACLE_WIDTH,
+            OBSTACLE_HEIGHT,
         );
-        raster.onLoad = () => {
-            raster.scale(OBSTACLE_WIDTH / raster.width, OBSTACLE_HEIGHT / raster.height);
-        };
-        return raster;
     };
 
     const spawnAerial = () => {
@@ -40,13 +40,7 @@ export const createObstacleManager = (scope: paper.PaperScope, groundY: number, 
             fillColor: 'white',
         });
 
-        const sheet = new scope.Raster(beeSprite);
-        sheet.onLoad = () => {
-            sheet.scale(
-                (BEE_SIZE * BEE_FRAME_COUNT) / sheet.width,
-                BEE_SIZE / sheet.height,
-            );
-        };
+        const sheet = createSheet(scope, beeSprite, BEE_SIZE, BEE_SIZE, BEE_FRAME_COUNT);
 
         const group = new scope.Group({ children: [clipRect, sheet], clipped: true });
 
@@ -65,10 +59,10 @@ export const createObstacleManager = (scope: paper.PaperScope, groundY: number, 
         frameCount++;
         if (frameCount % SPAWN_INTERVAL === 0) {
             if (Math.random() < 0.5) {
-                obstacles.push(createObstacle(scope, spawnGround(), player, onCollision, getSpeed));
+                obstacles.push(createObstacle(scope, spawnGround(), player, getSpeed));
             } else {
                 const { group, onTick } = spawnAerial();
-                obstacles.push(createObstacle(scope, group, player, onCollision, getSpeed, onTick));
+                obstacles.push(createObstacle(scope, group, player, getSpeed, onTick));
             }
         }
 

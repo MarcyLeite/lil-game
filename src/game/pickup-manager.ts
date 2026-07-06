@@ -1,5 +1,7 @@
 import { createPickup } from "./pickup"
 import starIcon from '../assets/star.png'
+import { createRaster } from './raster'
+import type { Player } from './player'
 
 const SPAWN_INTERVAL = 180
 const PICKUP_SIZE = 16
@@ -7,7 +9,7 @@ const PICKUP_SIZE = 16
 export const createPickupManager = (
     scope: paper.PaperScope,
     groundY: number,
-    player: paper.Path,
+    player: Player,
     onCollect: () => void,
     getObstacleBounds: () => paper.Rectangle[],
     getSpeed: () => number,
@@ -17,12 +19,7 @@ export const createPickupManager = (
 
     const spawnShape = () => {
         const offsetY = Math.random() * 80 + 20;
-        const raster = new scope.Raster(starIcon);
-        raster.position = new scope.Point(scope.view.bounds.right, groundY - PICKUP_SIZE - offsetY);
-        raster.onLoad = () => {
-            raster.scale(PICKUP_SIZE / raster.width, PICKUP_SIZE / raster.height);
-        };
-        return raster;
+        return createRaster(scope, starIcon, new scope.Point(scope.view.bounds.right, groundY - PICKUP_SIZE - offsetY), PICKUP_SIZE, PICKUP_SIZE);
     };
 
     const overlapsObstacle = (shape: paper.Item) =>

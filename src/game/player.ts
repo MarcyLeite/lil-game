@@ -1,11 +1,20 @@
 import { createSprite } from './sprite'
+import { createEmitter } from './emitter'
 
+const TOTAL_LIVES = 3
 const PLAYER_WIDTH = 25
 const PLAYER_HEIGHT = 35
 const PLAYER_OFFSET = 20
 const GRAVITY = 0.5
 const JUMP_FORCE = 10
 const MIN_JUMP_FORCE = 4
+
+type PlayerEvents = {
+    damage: [];
+    death: [];
+};
+
+export type Player = ReturnType<typeof createPlayer>;
 
 export const createPlayer = (scope: paper.PaperScope, groundY: number) => {
     const hitbox = new scope.Path.Rectangle({
@@ -15,9 +24,18 @@ export const createPlayer = (scope: paper.PaperScope, groundY: number) => {
     });
 
     const sprite = createSprite(scope, hitbox.bounds);
+    const events = createEmitter<PlayerEvents>();
 
     let velocityY = 0;
     let isShrunk = false;
+    let lives = TOTAL_LIVES;
+
+    const takeDamage = () => {
+        if (lives === 0) return;
+        lives--;
+        events.emit('damage');
+        if (lives === 0) events.emit('death');
+    };
 
     const effectiveRadius = () => hitbox.bounds.height / 2;
     const isOnGround = () => hitbox.position.y >= groundY - effectiveRadius();
@@ -78,5 +96,5 @@ export const createPlayer = (scope: paper.PaperScope, groundY: number) => {
         if (e.code === 'ArrowDown' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') restore();
     });
 
-    return hitbox;
+    return { hitbox, takeDamage, on: events.on, totalLives: TOTAL_LIVES };
 }

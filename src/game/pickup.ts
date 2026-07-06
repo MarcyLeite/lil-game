@@ -1,8 +1,10 @@
-export const createPickup = (scope: paper.PaperScope, shape: paper.Item, player: paper.Path, onCollect: () => void, getSpeed: () => number) => {
+import type { Player } from './player'
+
+export const createPickup = (scope: paper.PaperScope, shape: paper.Item, player: Player, onCollect: () => void, getSpeed: () => number) => {
     const update = () => {
         shape.position.x -= getSpeed();
 
-        if (shape.bounds.intersects(player.bounds)) {
+        if (shape.bounds.intersects(player.hitbox.bounds)) {
             shape.remove();
             onCollect();
             return true;

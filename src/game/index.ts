@@ -2,8 +2,8 @@ import { createPlayer } from "./player"
 import { createObstacleManager } from "./obstacle-manager"
 import { createPickupManager } from "./pickup-manager"
 import { createHud } from "./hud"
+import { createScore } from "./score"
 
-const TOTAL_LIVES = 3
 const BASE_SPEED = 3
 const SPEED_INCREMENT = 0.5
 const SPEED_INTERVAL = 300 // frames (~5s at 60fps)
@@ -12,8 +12,9 @@ export const createGame = (scope: paper.PaperScope) => {
     scope.view.element.style.background = '#0d1b4b';
 
     const groundY = scope.view.center.y;
-    const hud = createHud(scope, TOTAL_LIVES);
     const player = createPlayer(scope, groundY)
+    createHud(scope, player);
+    const score = createScore(scope);
 
     let frameCount = 0;
     const getSpeed = () => BASE_SPEED + Math.floor(frameCount / SPEED_INTERVAL) * SPEED_INCREMENT;
@@ -31,16 +32,12 @@ export const createGame = (scope: paper.PaperScope) => {
         scope.view.onFrame = null;
     };
 
-    const onCollision = () => {
-        const remaining = hud.removeLife();
-        if (remaining === 0) showGameOver();
-    };
+    player.on('death', showGameOver);
 
-    const obstacleManager = createObstacleManager(scope, groundY, player, onCollision, getSpeed)
-    const pickupManager = createPickupManager(scope, groundY, player, () => hud.addPoint(), obstacleManager.getObstacleBounds, getSpeed)
+    const obstacleManager = createObstacleManager(scope, groundY, player, getSpeed)
+    const pickupManager = createPickupManager(scope, groundY, player, () => score.addPoint(), obstacleManager.getObstacleBounds, getSpeed)
 
     const prevOnFrame = scope.view.onFrame;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     scope.view.onFrame = (event: any) => {
         if (prevOnFrame) prevOnFrame(event);
         frameCount++;
