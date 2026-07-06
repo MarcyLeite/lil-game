@@ -1,4 +1,5 @@
 import { createScroller } from "../core/scroller"
+import { createSpawner } from "../core/spawner"
 import { createGroundObstacle } from "../entities/ground-obstacle"
 import { createAerialObstacle } from "../entities/aerial-obstacle"
 import type { Player } from '../entities/player'
@@ -13,22 +14,22 @@ type Item = {
 
 export const createObstacleManager = (scope: paper.PaperScope, groundY: number, player: Player, getSpeed: () => number) => {
     const items: Item[] = [];
-    let frameCount = 0;
+
+    const spawner = createSpawner(SPAWN_INTERVAL, () => {
+        if (Math.random() < 0.5) {
+            items.push({ scroller: createScroller(scope, createGroundObstacle(scope, groundY), player, getSpeed, () => player.takeDamage()) });
+        } else {
+            const { hitbox, render, cleanup } = createAerialObstacle(scope, groundY);
+            items.push({
+                scroller: createScroller(scope, hitbox, player, getSpeed, () => player.takeDamage()),
+                render,
+                cleanup,
+            });
+        }
+    });
 
     const update = () => {
-        frameCount++;
-        if (frameCount % SPAWN_INTERVAL === 0) {
-            if (Math.random() < 0.5) {
-                items.push({ scroller: createScroller(scope, createGroundObstacle(scope, groundY), player, getSpeed, () => player.takeDamage()) });
-            } else {
-                const { hitbox, render, cleanup } = createAerialObstacle(scope, groundY);
-                items.push({
-                    scroller: createScroller(scope, hitbox, player, getSpeed, () => player.takeDamage()),
-                    render,
-                    cleanup,
-                });
-            }
-        }
+        spawner.tick();
 
         for (let i = items.length - 1; i >= 0; i--) {
             const done = items[i].scroller.update();
