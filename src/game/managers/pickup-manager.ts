@@ -1,7 +1,7 @@
-import { createPickup } from "./pickup"
-import starIcon from '../assets/star.png'
-import { createRaster } from './raster'
-import type { Player } from './player'
+import { createScroller } from "../core/scroller"
+import starIcon from '../../assets/star.png'
+import { createRaster } from '../core/raster'
+import type { Player } from '../entities/player'
 
 const SPAWN_INTERVAL = 180
 const PICKUP_SIZE = 16
@@ -10,11 +10,10 @@ export const createPickupManager = (
     scope: paper.PaperScope,
     groundY: number,
     player: Player,
-    onCollect: () => void,
     getObstacleBounds: () => paper.Rectangle[],
     getSpeed: () => number,
 ) => {
-    const pickups: ReturnType<typeof createPickup>[] = [];
+    const pickups: ReturnType<typeof createScroller>[] = [];
     let frameCount = 0;
 
     const spawnShape = () => {
@@ -32,7 +31,7 @@ export const createPickupManager = (
             if (overlapsObstacle(shape)) {
                 shape.remove();
             } else {
-                pickups.push(createPickup(scope, shape, player, onCollect, getSpeed));
+                pickups.push(createScroller(scope, shape, player, getSpeed, () => player.collect()));
             }
         }
 

@@ -1,5 +1,7 @@
-import { createSprite } from './sprite'
-import { createEmitter } from './emitter'
+import { createSprite } from '../core/sprite'
+import { createEmitter } from '../core/emitter'
+import walkSprite from '../../assets/player-walk.png'
+import duckSprite from '../../assets/player-duck.png'
 
 const TOTAL_LIVES = 3
 const PLAYER_WIDTH = 25
@@ -10,8 +12,9 @@ const JUMP_FORCE = 10
 const MIN_JUMP_FORCE = 4
 
 type PlayerEvents = {
-    damage: [];
+    damage: [remaining: number];
     death: [];
+    collect: [total: number];
 };
 
 export type Player = ReturnType<typeof createPlayer>;
@@ -23,18 +26,32 @@ export const createPlayer = (scope: paper.PaperScope, groundY: number) => {
         opacity: 0,
     });
 
-    const sprite = createSprite(scope, hitbox.bounds);
+    const sprite = createSprite(
+        scope,
+        { width: PLAYER_WIDTH, height: PLAYER_HEIGHT },
+        hitbox.bounds.center,
+        {
+            walk: { src: walkSprite, frameCount: 4 },
+            duck: { src: duckSprite, frameCount: 2 },
+        },
+    );
     const events = createEmitter<PlayerEvents>();
 
     let velocityY = 0;
     let isShrunk = false;
     let lives = TOTAL_LIVES;
+    let score = 0;
 
     const takeDamage = () => {
         if (lives === 0) return;
         lives--;
-        events.emit('damage');
+        events.emit('damage', lives);
         if (lives === 0) events.emit('death');
+    };
+
+    const collect = () => {
+        score++;
+        events.emit('collect', score);
     };
 
     const effectiveRadius = () => hitbox.bounds.height / 2;
@@ -44,7 +61,6 @@ export const createPlayer = (scope: paper.PaperScope, groundY: number) => {
         if (isShrunk || !isOnGround()) return;
         velocityY = -JUMP_FORCE;
     };
-
     const cancelJump = () => {
         if (velocityY < -MIN_JUMP_FORCE) velocityY = -MIN_JUMP_FORCE;
     };
@@ -57,7 +73,6 @@ export const createPlayer = (scope: paper.PaperScope, groundY: number) => {
         if (isShrunk || !isOnGround()) return;
         isShrunk = true;
         hitbox.scale(0.5);
-        sprite.setDucking(true);
         pinToGround();
     };
 
@@ -65,11 +80,10 @@ export const createPlayer = (scope: paper.PaperScope, groundY: number) => {
         if (!isShrunk) return;
         isShrunk = false;
         hitbox.scale(2);
-        sprite.setDucking(false);
         pinToGround();
     };
 
-    scope.view.onFrame = () => {
+    const update = () => {
         velocityY += GRAVITY;
         hitbox.position.y += velocityY;
 
@@ -78,8 +92,14 @@ export const createPlayer = (scope: paper.PaperScope, groundY: number) => {
             hitbox.position.y = groundY - r;
             velocityY = 0;
         }
+    };
 
-        sprite.update(hitbox.bounds, isOnGround());
+    const render = () => {
+        const anim = isShrunk ? 'duck' : 'walk';
+        if (isOnGround()) sprite.play(anim);
+        else sprite.hold(anim, 1);
+        sprite.setCenter(hitbox.bounds.center);
+        sprite.update();
     };
 
     const tool = new scope.Tool();
@@ -96,5 +116,5 @@ export const createPlayer = (scope: paper.PaperScope, groundY: number) => {
         if (e.code === 'ArrowDown' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') restore();
     });
 
-    return { hitbox, takeDamage, on: events.on, totalLives: TOTAL_LIVES };
+    return { hitbox, takeDamage, collect, on: events.on, totalLives: TOTAL_LIVES, update, render };
 }
