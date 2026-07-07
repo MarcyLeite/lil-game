@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import BuserGame from './BuserGame.vue'
+import BuserGame from '../src/BuserGame.vue'
 
 const score = ref(0)
 const lives = ref(3)

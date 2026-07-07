@@ -13,7 +13,6 @@ export default defineConfig(({ mode }) => {
                 ? [
                     dts({
                         include: ['src/game/**/*.ts', 'src/BuserGame.vue', 'src/index.ts'],
-                        exclude: ['src/App.vue', 'src/main.ts'],
                         rollupTypes: true,
                     }),
                 ]
