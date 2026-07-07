@@ -4,6 +4,7 @@ import { createBackground } from "./entities/background"
 import { createObstacleManager } from "./managers/obstacle-manager"
 import { createPickupManager } from "./managers/pickup-manager"
 import { createHud } from "./ui/hud"
+import { createGameOver } from "./ui/game-over"
 import { createDifficulty } from "./core/difficulty"
 import { createInput } from "./core/input"
 import { createViewport } from "./core/viewport"
@@ -29,27 +30,13 @@ export const createGame = (scope: paper.PaperScope) => {
     const background = createBackground(scope, viewport, difficulty.getSpeed);
     const ground = createGround(scope, viewport, difficulty.getSpeed);
 
-    let gameOverText: paper.PointText | null = null;
+    const gameOver = createGameOver(scope, viewport);
 
-    const showGameOver = () => {
-        gameOverText = new scope.PointText({
-            point: scope.view.center,
-            content: 'GAME OVER',
-            fillColor: 'white',
-            fontFamily: 'monospace',
-            fontWeight: 'bold',
-            fontSize: 48,
-            justification: 'center',
-        });
+    player.on('death', () => {
+        gameOver.show();
         scope.view.onFrame = null;
         events.emit('gameOver');
-    };
-
-    viewport.onResize('resize', () => {
-        if (gameOverText) gameOverText.point = scope.view.center;
     });
-
-    player.on('death', showGameOver);
     player.on('damage', remaining => events.emit('damage', remaining));
     player.on('collect', total => events.emit('score', total));
 
