@@ -17,6 +17,8 @@ src/game/
     sprite.ts                      # generic animated sprite (named animations)
   entities/                        # things that exist in the game world
     aerial-obstacle.ts             # animated aerial obstacle (hitbox + sprite)
+    background.ts                  # tiled parallax backdrop
+    ground.ts                      # tiled scrolling ground strip
     ground-obstacle.ts             # static ground obstacle factory
     pickup.ts                      # airborne pickup factory
     player-body.ts                 # physics + posture (hitbox, jump, ducking)
@@ -47,6 +49,8 @@ Folders group by role: `core/` = reusable building blocks, `entities/` = scene-p
 - **`ground-obstacle.ts`** — static raster (used as both visual and hitbox). No animation.
 - **`aerial-obstacle.ts`** — animated obstacle: separate invisible hitbox + animated sprite. Returns `{ hitbox, render, cleanup }`. `cleanup` is required because sprite is a separate paper item from the hitbox.
 - **`pickup.ts`** — airborne collectible. Static raster.
+- **`ground.ts`** — tiles `ground.png` across the view width and scrolls at `getSpeed()`, wrapping tiles from left to right. Exposes `{ update }`.
+- **`background.ts`** — tiles `bg.png` above `groundY` and scrolls at `getSpeed() * PARALLAX_FACTOR` for a parallax layer behind the scene. Applies `BG_OPACITY` to fade it and sends tiles to back on load. Exposes `{ update }`.
 
 ## Player events
 
@@ -72,6 +76,8 @@ scope.view.onFrame = () => {
     difficulty.tick();
     player.update();       // physics
     player.render();       // sprite frame + position
+    background.update();   // parallax layer
+    ground.update();       // scrolling ground strip
     obstacleManager.update();
     pickupManager.update();
 };
@@ -80,7 +86,7 @@ scope.view.onFrame = () => {
 - `update()` = state/behavior (physics, movement, collision).
 - `render()` = drives visuals (sprite frame advance, sheet panning).
 
-Obstacle-manager tracks `{ scroller, render?, cleanup? }` per item and drives each render explicitly rather than routing through the scroller.
+Obstacle-manager tracks `{ scroller, render?, cleanup? }` per item and drives each render explicitly rather than routing through the scroller. Aerial obstacles scroll at `getSpeed() * AERIAL_SPEED_FACTOR` (their scroller wraps the base speed) so bees feel a touch slower than ground scenery.
 
 ## Lifecycle
 

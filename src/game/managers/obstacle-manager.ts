@@ -5,6 +5,7 @@ import { createAerialObstacle } from "../entities/aerial-obstacle"
 import type { Player } from '../entities/player'
 
 const SPAWN_INTERVAL = 120
+const AERIAL_SPEED_FACTOR = 0.9
 
 type Item = {
     scroller: ReturnType<typeof createScroller>,
@@ -21,7 +22,7 @@ export const createObstacleManager = (scope: paper.PaperScope, groundY: number, 
         } else {
             const { hitbox, render, cleanup } = createAerialObstacle(scope, groundY);
             items.push({
-                scroller: createScroller(scope, hitbox, player, getSpeed, () => player.takeDamage()),
+                scroller: createScroller(scope, hitbox, player, () => getSpeed() * AERIAL_SPEED_FACTOR, () => player.takeDamage()),
                 render,
                 cleanup,
             });
