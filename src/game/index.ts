@@ -19,8 +19,6 @@ type GameEvents = {
 export type Game = ReturnType<typeof createGame>;
 
 export const createGame = (scope: paper.PaperScope) => {
-    scope.view.element.style.background = '#0d1b4b';
-
     const events = createEmitter<GameEvents>();
     const viewport = createViewport(scope);
 
