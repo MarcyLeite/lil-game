@@ -32,16 +32,33 @@ const over = ref(false)
     gap: 12px;
     padding: 12px;
     height: 100%;
+    width: 100%;
     box-sizing: border-box;
 }
 .stage {
-    width: 100%;
-    max-width: 800px;
+    flex: 1 1 auto;
+    min-height: 0;
     aspect-ratio: 9 / 20;
+    max-width: 100%;
 }
 .status {
     color: white;
     font-family: monospace;
     margin: 0;
+    flex-shrink: 0;
+}
+
+@media (pointer: coarse) {
+    .demo {
+        padding: 0;
+        gap: 0;
+    }
+    .stage {
+        aspect-ratio: auto;
+        width: 100%;
+    }
+    .status {
+        display: none;
+    }
 }
 </style>
