@@ -2,6 +2,7 @@ import { createSprite } from '../core/sprite'
 import { createEmitter } from '../core/emitter'
 import { createPlayerBody } from './player-body'
 import type { Input } from '../core/input'
+import type { Viewport } from '../core/viewport'
 import walkSprite from '../../assets/player-walk.png'
 import duckSprite from '../../assets/player-duck.png'
 
@@ -15,8 +16,8 @@ type PlayerEvents = {
 
 export type Player = ReturnType<typeof createPlayer>;
 
-export const createPlayer = (scope: paper.PaperScope, groundY: number, input: Input) => {
-    const body = createPlayerBody(scope, groundY);
+export const createPlayer = (scope: paper.PaperScope, viewport: Viewport, input: Input) => {
+    const body = createPlayerBody(scope, viewport);
 
     const sprite = createSprite(
         scope,

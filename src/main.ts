@@ -1,10 +1,5 @@
-import { createGame } from './game'
+import { createApp } from 'vue'
+import App from './App.vue'
 import './style.css'
-import paper from 'paper'
 
-const app = document.querySelector<HTMLDivElement>('#app')!
-app.innerHTML = `<canvas class="game"></canvas>`
-
-const canvas = app.querySelector<HTMLCanvasElement>('canvas.game')!
-paper.setup(canvas)
-createGame(paper)
+createApp(App).mount('#app')

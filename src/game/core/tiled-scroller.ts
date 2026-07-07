@@ -1,44 +1,68 @@
+import type { Viewport } from './viewport'
+
 type Options = {
     src: string,
     height: number,
-    top: number,
+    getTop: () => number,
     getSpeed: () => number,
     opacity?: number,
     sendToBack?: boolean,
 };
 
-export const createTiledScroller = (scope: paper.PaperScope, options: Options) => {
+export const createTiledScroller = (scope: paper.PaperScope, viewport: Viewport, options: Options) => {
     const tiles: paper.Raster[] = [];
     let tileWidth = 0;
+    let template: paper.Raster | null = null;
 
-    const template = new scope.Raster(options.src);
+    const spawnTile = () => {
+        if (!template) return null;
+        const tile = template.clone();
+        tile.visible = true;
+        if (options.opacity !== undefined) tile.opacity = options.opacity;
+        tile.scale(tileWidth / template.width, options.height / template.height);
+        if (options.sendToBack) tile.sendToBack();
+        tiles.push(tile);
+        return tile;
+    };
+
+    const layout = () => {
+        if (tiles.length === 0) return;
+        const y = options.getTop() + options.height / 2;
+        const left = viewport.getLeft();
+        for (let i = 0; i < tiles.length; i++) {
+            tiles[i].position = new scope.Point(left + i * tileWidth + tileWidth / 2, y);
+        }
+    };
+
+    const ensureCoverage = () => {
+        if (tileWidth === 0) return;
+        const needed = Math.ceil(viewport.getWidth() / tileWidth) + 1;
+        while (tiles.length < needed) spawnTile();
+    };
+
+    template = new scope.Raster(options.src);
     template.visible = false;
     template.onLoad = () => {
+        if (!template) return;
         tileWidth = template.width * (options.height / template.height);
-        const viewWidth = scope.view.bounds.width;
-        const count = Math.ceil(viewWidth / tileWidth) + 1;
-        for (let i = 0; i < count; i++) {
-            const tile = template.clone();
-            tile.visible = true;
-            if (options.opacity !== undefined) tile.opacity = options.opacity;
-            tile.scale(tileWidth / template.width, options.height / template.height);
-            tile.position = new scope.Point(
-                scope.view.bounds.left + i * tileWidth + tileWidth / 2,
-                options.top + options.height / 2,
-            );
-            if (options.sendToBack) tile.sendToBack();
-            tiles.push(tile);
-        }
-        template.remove();
+        ensureCoverage();
+        layout();
     };
+
+    viewport.onResize('resize', () => {
+        ensureCoverage();
+        layout();
+    });
 
     const update = () => {
         if (tiles.length === 0) return;
         const speed = options.getSpeed();
+        const left = viewport.getLeft();
+        const totalWidth = tiles.length * tileWidth;
         for (const tile of tiles) {
             tile.position.x -= speed;
-            if (tile.position.x + tileWidth / 2 < scope.view.bounds.left) {
-                tile.position.x += tiles.length * tileWidth;
+            if (tile.position.x + tileWidth / 2 < left) {
+                tile.position.x += totalWidth;
             }
         }
     };

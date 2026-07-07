@@ -2,12 +2,13 @@ import { createScroller } from "../core/scroller"
 import { createSpawner } from "../core/spawner"
 import { createPickup } from "../entities/pickup"
 import type { Player } from '../entities/player'
+import type { Viewport } from '../core/viewport'
 
 const SPAWN_INTERVAL = 180
 
 export const createPickupManager = (
     scope: paper.PaperScope,
-    groundY: number,
+    viewport: Viewport,
     player: Player,
     getObstacleBounds: () => paper.Rectangle[],
     getSpeed: () => number,
@@ -18,7 +19,7 @@ export const createPickupManager = (
         getObstacleBounds().some(b => b.intersects(shape.bounds));
 
     const spawner = createSpawner(SPAWN_INTERVAL, () => {
-        const shape = createPickup(scope, groundY);
+        const shape = createPickup(scope, viewport);
         if (overlapsObstacle(shape)) {
             shape.remove();
         } else {

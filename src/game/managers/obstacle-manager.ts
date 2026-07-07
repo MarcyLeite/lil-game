@@ -3,6 +3,7 @@ import { createSpawner } from "../core/spawner"
 import { createGroundObstacle } from "../entities/ground-obstacle"
 import { createAerialObstacle } from "../entities/aerial-obstacle"
 import type { Player } from '../entities/player'
+import type { Viewport } from '../core/viewport'
 
 const SPAWN_INTERVAL = 120
 
@@ -12,14 +13,14 @@ type Item = {
     cleanup?: () => void,
 };
 
-export const createObstacleManager = (scope: paper.PaperScope, groundY: number, player: Player, getSpeed: () => number) => {
+export const createObstacleManager = (scope: paper.PaperScope, viewport: Viewport, player: Player, getSpeed: () => number) => {
     const items: Item[] = [];
 
     const spawner = createSpawner(SPAWN_INTERVAL, () => {
         if (Math.random() < 0.5) {
-            items.push({ scroller: createScroller(scope, createGroundObstacle(scope, groundY), player, getSpeed, () => player.takeDamage()) });
+            items.push({ scroller: createScroller(scope, createGroundObstacle(scope, viewport), player, getSpeed, () => player.takeDamage()) });
         } else {
-            const aerial = createAerialObstacle(scope, groundY, getSpeed);
+            const aerial = createAerialObstacle(scope, viewport, getSpeed);
             items.push({
                 scroller: createScroller(scope, aerial.hitbox, player, aerial.speed, () => player.takeDamage()),
                 render: aerial.render,

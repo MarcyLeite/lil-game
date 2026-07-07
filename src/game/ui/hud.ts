@@ -1,12 +1,13 @@
 import lifeIcon from '../../assets/life.png'
 import { createRaster } from '../core/raster'
 import type { Player } from '../entities/player'
+import type { Viewport } from '../core/viewport'
 
 const LIFE_RADIUS = 8
 const LIFE_GAP = 6
 const HUD_MARGIN = 15
 
-export const createHud = (scope: paper.PaperScope, player: Player) => {
+export const createHud = (scope: paper.PaperScope, viewport: Viewport, player: Player) => {
     const icons: paper.Raster[] = [];
 
     for (let i = 0; i < player.totalLives; i++) {
@@ -19,12 +20,16 @@ export const createHud = (scope: paper.PaperScope, player: Player) => {
     }
 
     const scoreText = new scope.PointText({
-        point: new scope.Point(scope.view.bounds.right - HUD_MARGIN, HUD_MARGIN + LIFE_RADIUS),
+        point: new scope.Point(viewport.getRight() - HUD_MARGIN, HUD_MARGIN + LIFE_RADIUS),
         content: 'Score: 0',
         fillColor: 'white',
         fontFamily: 'monospace',
         fontSize: 14,
         justification: 'right',
+    });
+
+    viewport.onResize('resize', () => {
+        scoreText.point = new scope.Point(viewport.getRight() - HUD_MARGIN, HUD_MARGIN + LIFE_RADIUS);
     });
 
     player.on('damage', remaining => {

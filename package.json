@@ -1,19 +1,41 @@
 {
-  "name": "buser-game",
-  "private": true,
-  "version": "0.0.0",
+  "name": "@buser/vue-game",
+  "version": "0.1.0",
+  "description": "Endless-runner mini-game as a Vue 3 component.",
   "type": "module",
+  "main": "./dist/buser-game.js",
+  "module": "./dist/buser-game.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/buser-game.js"
+    },
+    "./style.css": "./dist/buser-game.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
+    "build": "vue-tsc --noEmit && vite build --mode lib",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "peerDependencies": {
+    "vue": "^3.4.0"
   },
   "devDependencies": {
     "@types/paper": "^0.11.14",
+    "@vitejs/plugin-vue": "^6.0.7",
+    "paper": "^0.12.18",
     "typescript": "~6.0.2",
-    "vite": "^8.1.0"
-  },
-  "dependencies": {
-    "paper": "^0.12.18"
+    "vite": "^8.1.0",
+    "vite-plugin-dts": "^5.0.3",
+    "vue": "^3.5.39",
+    "vue-tsc": "^3.3.6"
   }
 }

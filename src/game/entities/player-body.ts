@@ -1,3 +1,5 @@
+import type { Viewport } from '../core/viewport'
+
 const PLAYER_WIDTH = 25
 const PLAYER_HEIGHT = 35
 const PLAYER_OFFSET = 20
@@ -7,9 +9,11 @@ const MIN_JUMP_FORCE = 4
 
 export type PlayerBody = ReturnType<typeof createPlayerBody>;
 
-export const createPlayerBody = (scope: paper.PaperScope, groundY: number) => {
+export const createPlayerBody = (scope: paper.PaperScope, viewport: Viewport) => {
+    const groundY = () => viewport.getGroundY();
+
     const hitbox = new scope.Path.Rectangle({
-        point: new scope.Point(scope.view.bounds.left + PLAYER_OFFSET, groundY - PLAYER_HEIGHT),
+        point: new scope.Point(viewport.getLeft() + PLAYER_OFFSET, groundY() - PLAYER_HEIGHT),
         size: new scope.Size(PLAYER_WIDTH, PLAYER_HEIGHT),
         opacity: 0,
     });
@@ -18,11 +22,15 @@ export const createPlayerBody = (scope: paper.PaperScope, groundY: number) => {
     let ducking = false;
 
     const effectiveRadius = () => hitbox.bounds.height / 2;
-    const isOnGround = () => hitbox.position.y >= groundY - effectiveRadius();
+    const isOnGround = () => hitbox.position.y >= groundY() - effectiveRadius();
     const isDucking = () => ducking;
 
     const pinToGround = () => {
-        hitbox.position.y = groundY - effectiveRadius();
+        hitbox.position.y = groundY() - effectiveRadius();
+    };
+
+    const pinToLeft = () => {
+        hitbox.position.x = viewport.getLeft() + PLAYER_OFFSET + hitbox.bounds.width / 2;
     };
 
     const jump = () => {
@@ -53,11 +61,16 @@ export const createPlayerBody = (scope: paper.PaperScope, groundY: number) => {
         hitbox.position.y += velocityY;
 
         const r = effectiveRadius();
-        if (hitbox.position.y >= groundY - r) {
-            hitbox.position.y = groundY - r;
+        if (hitbox.position.y >= groundY() - r) {
+            hitbox.position.y = groundY() - r;
             velocityY = 0;
         }
     };
+
+    viewport.onResize('resize', () => {
+        pinToLeft();
+        if (isOnGround()) pinToGround();
+    });
 
     return { hitbox, jump, cancelJump, shrink, restore, isOnGround, isDucking, update };
 };

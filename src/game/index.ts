@@ -6,21 +6,35 @@ import { createPickupManager } from "./managers/pickup-manager"
 import { createHud } from "./ui/hud"
 import { createDifficulty } from "./core/difficulty"
 import { createInput } from "./core/input"
+import { createViewport } from "./core/viewport"
+import { createEmitter } from "./core/emitter"
+
+type GameEvents = {
+    ready: [];
+    score: [total: number];
+    damage: [remaining: number];
+    gameOver: [];
+};
+
+export type Game = ReturnType<typeof createGame>;
 
 export const createGame = (scope: paper.PaperScope) => {
     scope.view.element.style.background = '#0d1b4b';
 
-    const groundY = scope.view.center.y;
+    const events = createEmitter<GameEvents>();
+    const viewport = createViewport(scope);
 
     const input = createInput(scope);
-    const player = createPlayer(scope, groundY, input);
-    createHud(scope, player);
+    const player = createPlayer(scope, viewport, input);
+    createHud(scope, viewport, player);
     const difficulty = createDifficulty();
-    const background = createBackground(scope, groundY, difficulty.getSpeed);
-    const ground = createGround(scope, groundY, difficulty.getSpeed);
+    const background = createBackground(scope, viewport, difficulty.getSpeed);
+    const ground = createGround(scope, viewport, difficulty.getSpeed);
+
+    let gameOverText: paper.PointText | null = null;
 
     const showGameOver = () => {
-        new scope.PointText({
+        gameOverText = new scope.PointText({
             point: scope.view.center,
             content: 'GAME OVER',
             fillColor: 'white',
@@ -30,12 +44,19 @@ export const createGame = (scope: paper.PaperScope) => {
             justification: 'center',
         });
         scope.view.onFrame = null;
+        events.emit('gameOver');
     };
 
-    player.on('death', showGameOver);
+    viewport.onResize('resize', () => {
+        if (gameOverText) gameOverText.point = scope.view.center;
+    });
 
-    const obstacleManager = createObstacleManager(scope, groundY, player, difficulty.getSpeed)
-    const pickupManager = createPickupManager(scope, groundY, player, obstacleManager.getObstacleBounds, difficulty.getSpeed)
+    player.on('death', showGameOver);
+    player.on('damage', remaining => events.emit('damage', remaining));
+    player.on('collect', total => events.emit('score', total));
+
+    const obstacleManager = createObstacleManager(scope, viewport, player, difficulty.getSpeed)
+    const pickupManager = createPickupManager(scope, viewport, player, obstacleManager.getObstacleBounds, difficulty.getSpeed)
 
     scope.view.onFrame = () => {
         difficulty.tick();
@@ -47,11 +68,14 @@ export const createGame = (scope: paper.PaperScope) => {
         pickupManager.update();
     };
 
+    queueMicrotask(() => events.emit('ready'));
+
     const destroy = () => {
         scope.view.onFrame = null;
+        scope.view.onResize = null;
         input.destroy();
         scope.project.activeLayer.removeChildren();
     };
 
-    return { destroy };
+    return { destroy, on: events.on };
 }
