@@ -16,6 +16,7 @@ src/game/
     spawner.ts                     # interval-triggered spawn callback
     sprite.ts                      # generic animated sprite (named animations)
     tiled-scroller.ts              # wrapping tile strip (background/ground)
+    viewport.ts                    # view bounds + groundY + resize event stream
   entities/                        # things that exist in the game world
     aerial-obstacle.ts             # animated aerial obstacle (hitbox + sprite)
     background.ts                  # tiled parallax backdrop
@@ -28,6 +29,7 @@ src/game/
     obstacle-manager.ts
     pickup-manager.ts
   ui/
+    game-over.ts                   # game-over text overlay (recenters on resize)
     hud.ts                         # renders lives + score, pure listener
 ```
 
@@ -42,7 +44,8 @@ Folders group by role: `core/` = reusable building blocks, `entities/` = scene-p
 - **`difficulty.ts`** — `createDifficulty()` owns the speed curve constants and a tick counter. Exposes `tick()` and `getSpeed()`.
 - **`input.ts`** — maps physical inputs to semantic action events: `jump`, `jumpCancel`, `duck`, `unduck`. Keys and mouse triggers configured here. Returns `{ on, destroy }`.
 - **`spawner.ts`** — `createSpawner(interval, spawn)` returns `{ tick }`. Every `interval`-th tick, calls `spawn()`.
-- **`tiled-scroller.ts`** — `createTiledScroller(scope, { src, height, top, getSpeed, opacity?, sendToBack? })` loads a raster, tiles it across the view width, and wraps each tile back to the right edge as it scrolls off the left. Removes the template raster after cloning. Returns `{ update }`. Backing primitive for `ground.ts` and `background.ts`.
+- **`tiled-scroller.ts`** — `createTiledScroller(scope, viewport, { src, height, getTop, getSpeed, opacity?, sendToBack? })` loads a raster, tiles it to cover the view width, and wraps each tile back to the right edge as it scrolls off the left. `getTop` is a getter (not a static value) so the strip re-anchors when the view resizes. Subscribes to `viewport.onResize` to spawn extra tiles and re-lay-out on grow. Returns `{ update }`. Backing primitive for `ground.ts` and `background.ts`.
+- **`viewport.ts`** — wraps `scope.view`. Exposes `get()` (full snapshot), plus getters `getGroundY`, `getWidth`, `getLeft`, `getRight`, and `onResize` (typed emitter forwarding `scope.view.onResize`). `groundY` is defined as `view.center.y` — the horizon line is authoritative here, so everything that lives on the ground reads from it. Everything that needs to react to canvas size changes subscribes; nothing else reads `scope.view.bounds` directly.
 
 ## Entities
 
@@ -51,8 +54,8 @@ Folders group by role: `core/` = reusable building blocks, `entities/` = scene-p
 - **`ground-obstacle.ts`** — static raster (used as both visual and hitbox). No animation.
 - **`aerial-obstacle.ts`** — animated obstacle: separate invisible hitbox + animated sprite. Takes `getSpeed` and returns `{ hitbox, render, cleanup, speed }`, where `speed()` is `getSpeed() * AERIAL_SPEED_FACTOR` so the entity owns its own pacing. `cleanup` is required because sprite is a separate paper item from the hitbox.
 - **`pickup.ts`** — airborne collectible. Static raster.
-- **`ground.ts`** — thin config wrapper over `tiled-scroller` for `ground.png` at `groundY`, scrolling at `getSpeed()`.
-- **`background.ts`** — thin config wrapper over `tiled-scroller` for `bg.png` above `groundY`, scrolling at `getSpeed() * PARALLAX_FACTOR` with `BG_OPACITY` applied and `sendToBack` so it renders behind the scene.
+- **`ground.ts`** — thin config wrapper over `tiled-scroller` for `ground.png` at `viewport.getGroundY()`, scrolling at `getSpeed()`.
+- **`background.ts`** — thin config wrapper over `tiled-scroller` for `bg.png` immediately above `groundY`, scrolling at `getSpeed() * PARALLAX_FACTOR` with `BG_OPACITY` applied and `sendToBack` so it renders behind the scene.
 
 ## Player events
 
@@ -67,7 +70,9 @@ type PlayerEvents = {
 ```
 
 - **HUD** subscribes to `damage` (removes life icons down to `remaining`) and `collect` (updates score text with `total`).
-- **`index.ts`** subscribes to `death` (shows game over screen).
+- **`index.ts`** subscribes to `death` (shows game over screen), and re-emits `damage`/`collect` on its own `GameEvents` emitter as `damage`/`score` for external listeners.
+
+`createGame` itself exposes a public event stream `{ ready, score, damage, gameOver }` on the returned `{ destroy, on }`. It's the seam host code (the Vue wrapper in `main.ts`) subscribes to — internal wiring stays on the player emitter.
 
 ## Physics ≠ rendering
 
@@ -92,9 +97,10 @@ Obstacle-manager tracks `{ scroller, render?, cleanup? }` per item and drives ea
 
 ## Lifecycle
 
-`createGame(scope)` returns `{ destroy }`. `destroy()` breaks three external anchors:
+`createGame(scope)` returns `{ destroy, on }`. `destroy()` breaks four external anchors:
 
 - `scope.view.onFrame = null` — stops the frame loop
+- `scope.view.onResize = null` — stops resize event propagation to entities
 - `input.destroy()` — removes window listeners + paper Tool
 - `scope.project.activeLayer.removeChildren()` — clears all scene items
 
@@ -108,12 +114,13 @@ Everything else (emitters, entity closures, manager state) is GC'd naturally onc
 - **Generic names for entity variants** — `ground-obstacle`/`aerial-obstacle`, not `cactus`/`bee`. Code describes role, not art asset.
 - **Constants stay with their owner** — `PLAYER_WIDTH` in `player-body.ts`, `PICKUP_SIZE` in `pickup.ts`, `SPAWN_INTERVAL` in each manager. No central config file at this scale — colocation is more discoverable.
 - **Cleanup is explicit** when an entity creates multiple paper items (see `aerial-obstacle.ts`). Two items to create = two items to dispose. Not hidden.
+- **Viewport is a dependency, not a global**. Anything that reads canvas size or the ground line takes a `Viewport` and — if it has persistent state that must reflow on resize — subscribes to `viewport.onResize`. No `scope.view.bounds` reads outside `viewport.ts`. This is what lets the game be dropped into a resizable Vue component without special cases.
 
 ## Known open threads
 
 - **State machine for player animations**: as more animations arrive (jump-specific, damage, land-impact), the `isOnGround ? play(anim) : hold(anim, 1)` logic in `player.render()` will grow into a state machine. Not needed yet.
-- **Restart flow**: `destroy()` exists but no UI/logic invokes it. A game-over screen with a "restart" button would use it.
+- **Restart flow**: `destroy()` exists but no UI/logic invokes it. The `game-over` overlay is the natural place to hang a restart button that would call `destroy()` + rebuild.
 - **Sound**: no audio module — collect/damage/jump/game-over sounds would need one.
 - **Tests**: no test suite. Pure functions (`emitter`, `scroller` collision math, `difficulty` speed curve, `spawner` tick logic) are the natural first targets.
 
-Typecheck (`npx tsc --noEmit`) passes clean.
+Typecheck (`npm run typecheck`, i.e. `vue-tsc --noEmit`) passes clean.
