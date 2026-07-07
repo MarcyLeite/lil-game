@@ -1,5 +1,5 @@
 {
-  "name": "@buser/vue-game",
+  "name": "@marcyleite/lil-game",
   "version": "0.1.0",
   "description": "Endless-runner mini-game as a Vue 3 component.",
   "type": "module",
@@ -19,20 +19,31 @@
   "sideEffects": [
     "**/*.css"
   ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MarcyLeite/lil-game.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build --mode lib",
     "build:demo": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "vue-tsc --noEmit",
+    "semantic-release": "semantic-release"
   },
   "peerDependencies": {
     "vue": "^3.4.0"
   },
   "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
     "@types/paper": "^0.11.14",
     "@vitejs/plugin-vue": "^6.0.7",
     "paper": "^0.12.18",
+    "semantic-release": "^24.2.0",
     "typescript": "~6.0.2",
     "vite": "^8.1.0",
     "vite-plugin-dts": "^5.0.3",
