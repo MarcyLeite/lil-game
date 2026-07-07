@@ -15,6 +15,7 @@ src/game/
     scroller.ts                    # "moves left + intersects player" behavior
     spawner.ts                     # interval-triggered spawn callback
     sprite.ts                      # generic animated sprite (named animations)
+    tiled-scroller.ts              # wrapping tile strip (background/ground)
   entities/                        # things that exist in the game world
     aerial-obstacle.ts             # animated aerial obstacle (hitbox + sprite)
     background.ts                  # tiled parallax backdrop
@@ -41,16 +42,17 @@ Folders group by role: `core/` = reusable building blocks, `entities/` = scene-p
 - **`difficulty.ts`** — `createDifficulty()` owns the speed curve constants and a tick counter. Exposes `tick()` and `getSpeed()`.
 - **`input.ts`** — maps physical inputs to semantic action events: `jump`, `jumpCancel`, `duck`, `unduck`. Keys and mouse triggers configured here. Returns `{ on, destroy }`.
 - **`spawner.ts`** — `createSpawner(interval, spawn)` returns `{ tick }`. Every `interval`-th tick, calls `spawn()`.
+- **`tiled-scroller.ts`** — `createTiledScroller(scope, { src, height, top, getSpeed, opacity?, sendToBack? })` loads a raster, tiles it across the view width, and wraps each tile back to the right edge as it scrolls off the left. Removes the template raster after cloning. Returns `{ update }`. Backing primitive for `ground.ts` and `background.ts`.
 
 ## Entities
 
 - **`player-body.ts`** — the physical player: hitbox, velocity, gravity, jump/cancel-jump, shrink/restore (ducking), ground detection, `update()`. Owns all physics constants (dimensions, gravity, jump forces). Exposes `isDucking()`, `isOnGround()` getters.
 - **`player.ts`** — the game character. Composes body + sprite, owns lives + score state, wires input to body actions, emits gameplay events. Exposes `type Player = ReturnType<typeof createPlayer>` used across other modules.
 - **`ground-obstacle.ts`** — static raster (used as both visual and hitbox). No animation.
-- **`aerial-obstacle.ts`** — animated obstacle: separate invisible hitbox + animated sprite. Returns `{ hitbox, render, cleanup }`. `cleanup` is required because sprite is a separate paper item from the hitbox.
+- **`aerial-obstacle.ts`** — animated obstacle: separate invisible hitbox + animated sprite. Takes `getSpeed` and returns `{ hitbox, render, cleanup, speed }`, where `speed()` is `getSpeed() * AERIAL_SPEED_FACTOR` so the entity owns its own pacing. `cleanup` is required because sprite is a separate paper item from the hitbox.
 - **`pickup.ts`** — airborne collectible. Static raster.
-- **`ground.ts`** — tiles `ground.png` across the view width and scrolls at `getSpeed()`, wrapping tiles from left to right. Exposes `{ update }`.
-- **`background.ts`** — tiles `bg.png` above `groundY` and scrolls at `getSpeed() * PARALLAX_FACTOR` for a parallax layer behind the scene. Applies `BG_OPACITY` to fade it and sends tiles to back on load. Exposes `{ update }`.
+- **`ground.ts`** — thin config wrapper over `tiled-scroller` for `ground.png` at `groundY`, scrolling at `getSpeed()`.
+- **`background.ts`** — thin config wrapper over `tiled-scroller` for `bg.png` above `groundY`, scrolling at `getSpeed() * PARALLAX_FACTOR` with `BG_OPACITY` applied and `sendToBack` so it renders behind the scene.
 
 ## Player events
 
@@ -86,7 +88,7 @@ scope.view.onFrame = () => {
 - `update()` = state/behavior (physics, movement, collision).
 - `render()` = drives visuals (sprite frame advance, sheet panning).
 
-Obstacle-manager tracks `{ scroller, render?, cleanup? }` per item and drives each render explicitly rather than routing through the scroller. Aerial obstacles scroll at `getSpeed() * AERIAL_SPEED_FACTOR` (their scroller wraps the base speed) so bees feel a touch slower than ground scenery.
+Obstacle-manager tracks `{ scroller, render?, cleanup? }` per item and drives each render explicitly rather than routing through the scroller. Aerial obstacles expose their own `speed()` (owning the `AERIAL_SPEED_FACTOR` constant) which the manager threads into the scroller — the manager itself is speed-policy-agnostic.
 
 ## Lifecycle
 

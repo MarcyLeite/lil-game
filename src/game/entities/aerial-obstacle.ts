@@ -4,10 +4,11 @@ import { createSprite } from '../core/sprite'
 const AERIAL_SIZE = 32
 const AERIAL_FRAME_COUNT = 4
 const AERIAL_ANIM_SPEED = 6
+const AERIAL_SPEED_FACTOR = 0.9
 const MIN_OFFSET_Y = 20
 const MAX_OFFSET_Y = 120
 
-export const createAerialObstacle = (scope: paper.PaperScope, groundY: number) => {
+export const createAerialObstacle = (scope: paper.PaperScope, groundY: number, getSpeed: () => number) => {
     const offsetY = Math.random() * (MAX_OFFSET_Y - MIN_OFFSET_Y) + MIN_OFFSET_Y;
     const center = new scope.Point(
         scope.view.bounds.right + AERIAL_SIZE / 2,
@@ -35,5 +36,7 @@ export const createAerialObstacle = (scope: paper.PaperScope, groundY: number) =
 
     const cleanup = () => sprite.remove();
 
-    return { hitbox, render, cleanup };
+    const speed = () => getSpeed() * AERIAL_SPEED_FACTOR;
+
+    return { hitbox, render, cleanup, speed };
 };
