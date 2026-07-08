@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => {
                 ? [
                     dts({
                         include: ['src/game/**/*.ts', 'src/BuserGame.vue', 'src/index.ts'],
-                        rollupTypes: true,
+                        bundleTypes: true,
                     }),
                 ]
                 : []),
@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => {
                     lib: {
                         entry: resolve(__dirname, 'src/index.ts'),
                         name: 'BuserGame',
-                        fileName: 'buser-game',
+                        fileName: 'lil-game',
                         formats: ['es'],
                     },
                     rollupOptions: {

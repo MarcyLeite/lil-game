@@ -1,17 +1,17 @@
 {
-  "name": "@marcyleite/lil-game",
+  "name": "@buserbrasil/lil-game",
   "version": "0.1.0",
   "description": "Endless-runner mini-game as a Vue 3 component.",
   "type": "module",
-  "main": "./dist/buser-game.js",
-  "module": "./dist/buser-game.js",
+  "main": "./dist/lil-game.js",
+  "module": "./dist/lil-game.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/buser-game.js"
+      "import": "./dist/lil-game.js"
     },
-    "./style.css": "./dist/buser-game.css"
+    "./style.css": "./dist/lil-game.css"
   },
   "files": [
     "dist"
@@ -24,7 +24,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MarcyLeite/lil-game.git"
+    "url": "git+https://github.com/buserbrasil/lil-game.git"
   },
   "scripts": {
     "dev": "vite",
@@ -40,6 +40,7 @@
   "devDependencies": {
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
+    "@types/node": "^26.1.1",
     "@types/paper": "^0.11.14",
     "@vitejs/plugin-vue": "^6.0.7",
     "paper": "^0.12.18",

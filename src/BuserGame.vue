@@ -57,19 +57,19 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div ref="root" class="buser-game">
+    <div ref="root" class="lil-game">
         <canvas ref="canvas" />
     </div>
 </template>
 
 <style scoped>
-.buser-game {
+.lil-game {
     position: relative;
     width: 100%;
     height: 100%;
     overflow: hidden;
 }
-.buser-game canvas {
+.lil-game canvas {
     display: block;
     width: 100%;
     height: 100%;
