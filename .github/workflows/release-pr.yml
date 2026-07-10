@@ -38,8 +38,15 @@ jobs:
             echo "release=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          NEXT_VERSION=$(cat .release-version)
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          if [ "$NEXT_VERSION" = "$CURRENT_VERSION" ]; then
+            echo "package.json already at $NEXT_VERSION — release already applied, skipping."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           echo "release=true" >> "$GITHUB_OUTPUT"
-          echo "version=$(cat .release-version)" >> "$GITHUB_OUTPUT"
+          echo "version=$NEXT_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Prepare release/next branch
         if: steps.sr.outputs.release == 'true'
