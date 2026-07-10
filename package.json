@@ -24,7 +24,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/buserbrasil/lil-game.git"
+    "url": "git+https://github.com/MarcyLeite/lil-game.git"
   },
   "scripts": {
     "dev": "vite",
