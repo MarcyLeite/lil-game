@@ -1,6 +1,6 @@
 {
   "name": "@buserbrasil/lil-game",
-  "version": "1.0.0",
+  "version": "0.1.1",
   "description": "Endless-runner mini-game as a Vue 3 component.",
   "type": "module",
   "main": "./dist/lil-game.js",
