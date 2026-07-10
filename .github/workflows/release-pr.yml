@@ -1,0 +1,100 @@
+name: Release PR
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-pr
+  cancel-in-progress: true
+
+jobs:
+  release-pr:
+    # Skip pushes that carry a release commit (avoids re-running after the release PR merges).
+    if: ${{ !contains(github.event.head_commit.message, 'chore(release):') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Compute next release
+        id: sr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          rm -f .release-version .release-notes.md
+          node .github/scripts/prepare-release.mjs
+          if [ ! -s .release-version ]; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "release=true" >> "$GITHUB_OUTPUT"
+          echo "version=$(cat .release-version)" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare release/next branch
+        if: steps.sr.outputs.release == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B release/next
+
+      - name: Apply version bump and CHANGELOG
+        if: steps.sr.outputs.release == 'true'
+        run: |
+          VERSION="${{ steps.sr.outputs.version }}"
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
+
+          TMP=$(mktemp)
+          if [ -f CHANGELOG.md ]; then
+            {
+              cat .release-notes.md
+              echo ""
+              cat CHANGELOG.md
+            } > "$TMP"
+          else
+            {
+              echo "# Changelog"
+              echo ""
+              cat .release-notes.md
+              echo ""
+            } > "$TMP"
+          fi
+          mv "$TMP" CHANGELOG.md
+          rm -f .release-version .release-notes.md
+
+      - name: Commit and force-push release/next
+        if: steps.sr.outputs.release == 'true'
+        run: |
+          git add package.json package-lock.json CHANGELOG.md
+          git commit -m "chore(release): ${{ steps.sr.outputs.version }}"
+          git push --force origin release/next
+
+      - name: Open or update release PR
+        if: steps.sr.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.sr.outputs.version }}"
+          BODY=$(cat <<EOF
+          Automated release PR.
+
+          Merging this PR will publish \`v$VERSION\` to the GitHub npm registry.
+          EOF
+          )
+          if gh pr view release/next --json state --jq .state 2>/dev/null | grep -qi open; then
+            gh pr edit release/next --title "chore(release): $VERSION" --body "$BODY"
+          else
+            gh pr create --base main --head release/next --title "chore(release): $VERSION" --body "$BODY"
+          fi
